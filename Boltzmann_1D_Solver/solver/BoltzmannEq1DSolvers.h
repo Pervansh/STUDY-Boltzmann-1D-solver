@@ -22,6 +22,7 @@ struct Destribution1dState{
 
     Destribution1dState() = default;
 
+    // Perfect Forwarding
     template<
         std::convertible_to< std::vector<std::vector<T>> > H,
         std::convertible_to< std::vector<std::vector<T>> > G
@@ -264,10 +265,12 @@ void bgk1dMethod(
     });
 
     T t{ 0.f };
-    for (T t{ 0 }; t < data.t_end + data.dt / 2; t += data.dt) {
+    for (T t{ 0 }; data.t_end - t > 0; t += data.dt) {
         // Time layers changing
 
         state = RkMethod::stepY(fullRightSide, state, std::min(data.dt, data.t_end - t));
+
+        std::cout << state.h[0][0] << std::endl;
     }
 
     output.print<T>(t, bgk1dMacroparameters(state, dx, xi_v, apprInt));
