@@ -13,7 +13,7 @@
 
 template <typename T, typename AdvectionFluxType>
 /*
-    концепт для флакс тайпа: flux(T) -> T
+    концепт для флакс тайпа: flux(Type) -> Type
 */
 struct TaskData {
     // Left boundry of computation domain
@@ -78,25 +78,25 @@ void uniformMinmodRecRkMethod(
 
         /*
         // half delta is without dx^{-1} because final formulae for uL & uR do not have dx
-        T halfDelta0 = T(0.5f) * minmod(usPrev[0], usPrev[1] - usPrev[0]);
-        T uL0 = u[i] + halfDelta; // Left value for right cell boundry
-        T uR0 = u[i] - halfDelta; // Right value for left cell boundry
+        Type halfDelta0 = Type(0.5f) * minmod(usPrev[0], usPrev[1] - usPrev[0]);
+        Type uL0 = u[i] + halfDelta; // Left value for right cell boundry
+        Type uR0 = u[i] - halfDelta; // Right value for left cell boundry
 
         fs[0] = monotoneFlux(taskData.flux(uL0), taskData.flux(uR0), uL0, uR0);
 
 
         // half delta is without dx^{-1} because final formulae for uL & uR do not have dx
-        T halfDelta0 = T(0.5f) * minmod(usPrev[N - 1] - usPrev[N - 2], -usPrev[N - 1]);
-        T uLN = u[i] + halfDelta; // Left value for right cell boundry
-        T uRN = u[i] - halfDelta; // Right value for left cell boundry
+        Type halfDelta0 = Type(0.5f) * minmod(usPrev[N - 1] - usPrev[N - 2], -usPrev[N - 1]);
+        Type uLN = u[i] + halfDelta; // Left value for right cell boundry
+        Type uRN = u[i] - halfDelta; // Right value for left cell boundry
 
         fs[N - 1] = monotoneFlux(taskData.flux(uLN), taskData.flux(uRN), uLN, uRN);
 
         for (int i = 1; i < N - 1; ++i) {
             // half delta is without dx^{-1} because final formulae for uL & uR do not have dx
-            T halfDelta = T(0.5f) * minmod(usPrev[i] - usPrev[i - 1], usPrev[i + 1] - usPrev[i]);
-            T uL = u[i] + halfDelta; // Left value for right cell boundry
-            T uR = u[i] - halfDelta; // Right value for left cell boundry
+            Type halfDelta = Type(0.5f) * minmod(usPrev[i] - usPrev[i - 1], usPrev[i + 1] - usPrev[i]);
+            Type uL = u[i] + halfDelta; // Left value for right cell boundry
+            Type uR = u[i] - halfDelta; // Right value for left cell boundry
             
             fs[i] = monotoneFlux(taskData.flux(uL), taskData.flux(uR), uL, uR);
         }
@@ -136,7 +136,7 @@ void uniformMinmodRecRkMethod(
 
         // TVD RK step to obtain next time layer solution us
         for (; i < N; ++i) {
-            // us[i] = RkMethod<T, T>::stepY(rkRightPart, usPrev[i], taskData.dt);
+            // us[i] = RkMethod<Type, Type>::stepY(rkRightPart, usPrev[i], taskData.dt);
             us[i] = RkMethod::stepY(rkRightPart, usPrev[i], taskData.dt);
         }
     }
@@ -203,7 +203,7 @@ void uniformConstRecRkMethod(
 
         // TVD RK step to obtain next time layer solution us
         for (; i < N; ++i) {
-            // us[i] = RkMethod<T, T>::stepY(rkRightPart, usPrev[i], taskData.dt);
+            // us[i] = RkMethod<Type, Type>::stepY(rkRightPart, usPrev[i], taskData.dt);
             us[i] = RkMethod::stepY(rkRightPart, usPrev[i], taskData.dt);
         }
     }

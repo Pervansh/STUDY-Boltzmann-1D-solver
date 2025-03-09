@@ -1,24 +1,35 @@
 #pragma once
 
-#include <type_traits>
+#include <concepts>
 
 /*
-    концепт для RK: rkMethod::step(...) -> T
+    концепт для RK: rkMethod::step(...) -> Type
+*/
+/*
+template <
+    typename S,
+    std::floating_point Type,
+    typename Y,
+    typename Func
+>
 */
 
 /*
-    концепт для Func: Func(T u, T t) -> T
+    концепт для Func: Func(Type u, Type t) -> Type
 */
 
-// T - time type, Y - phase coordinate type
+template <std::floating_point T, typename Y, typename F>
+using RkStepY = Y(*)(F f, Y y, T tau);
+
+// Type - time type, Y - phase coordinate type
 struct SSPRK3 {
     /*
     static unsigned int svtages;
-    static T a[];
-    static T b[];
+    static Type a[];
+    static Type b[];
     */
 
-    // RK step for f w/ signature f(T, Y)
+    // RK step for f w/ signature f(Type, Y)
     template<typename T, typename Y, typename Func>
     static inline Y stepTY(Func f, T t, Y y, T tau) {
         Y k1 = f(t, y);
@@ -28,7 +39,7 @@ struct SSPRK3 {
         return y + tau / T(6.f) * (k1 + k2 + T(4.f) * k3);
     }
 
-    // RK step for f w/ signature f(Y, T)
+    // RK step for f w/ signature f(Y, Type)
     template<typename T, typename Y, typename Func>
     static inline Y stepYT(Func f, Y y, T t, T tau) {
         Y k1 = f(y, t);
@@ -49,14 +60,14 @@ struct SSPRK3 {
     }
 };
 
-// T - time type, Y - phase coordinate type
+// Type - time type, Y - phase coordinate type
 struct HeunsMethodRK {
     /*
     static unsigned int stages;
-    static T a[];
-    static T b[];
+    static Type a[];
+    static Type b[];
     */
-    // RK step for f w/ signature f(T, Y)
+    // RK step for f w/ signature f(Type, Y)
     template<typename T, typename Y, typename Func>
     static inline Y stepTY(Func f, T t, Y y, T tau) {
         Y k1 = f(t, y);
@@ -65,7 +76,7 @@ struct HeunsMethodRK {
         return y + tau / T(2.f) * (k1 + k2);
     }
 
-    // RK step for f w/ signature f(Y, T)
+    // RK step for f w/ signature f(Y, Type)
     template<typename T, typename Y, typename Func>
     static inline Y stepYT(Func f, Y y, T t, T tau) {
         Y k1 = f(y, t);
@@ -85,20 +96,20 @@ struct HeunsMethodRK {
 };
 
 
-// T - time type, Y - phase coordinate type
+// Type - time type, Y - phase coordinate type
 struct ExplicitEulerRK {
     /*
     static unsigned int stages;
-    static T a[];
-    static T b[];
+    static Type a[];
+    static Type b[];
     */
-    // RK step for f w/ signature f(T, Y)
+    // RK step for f w/ signature f(Type, Y)
     template<typename T, typename Y, typename Func>
     static inline Y stepTY(Func f, T t, Y y, T tau) {
         return y + tau * f(t, y);
     }
 
-    // RK step for f w/ signature f(Y, T)
+    // RK step for f w/ signature f(Y, Type)
     template<typename T, typename Y, typename Func>
     static inline Y stepYT(Func f, Y y, T t, T tau) {
         return y + tau * f(y, t);
@@ -112,24 +123,24 @@ struct ExplicitEulerRK {
 };
 
 /*
-template <typename T>
-unsigned int SSPRK3<T>::stages = 3;
+template <typename Type>
+unsigned int SSPRK3<Type>::stages = 3;
 
-template <typename T>
-T SSPRK3<T>::a[] = {T(0), T(1), T(0.5)};
+template <typename Type>
+Type SSPRK3<Type>::a[] = {Type(0), Type(1), Type(0.5)};
 
-template <typename T>
-T SSPRK3<T>::b[] = { 
-    {T(0), T(1), T(0.5)},
-    {T(1), T(0), T(0)}
-    {T(0.25), T(0.25), T(0)}
+template <typename Type>
+Type SSPRK3<Type>::b[] = { 
+    {Type(0), Type(1), Type(0.5)},
+    {Type(1), Type(0), Type(0)}
+    {Type(0.25), Type(0.25), Type(0)}
 };
 */
 /*
-template<typename T, typename Func>
-vector<T> rungeKuttaTemplateStep(const RungeKuttaParams<T>& rkParams, T tau, int n, Func f, T t, const vector<T>& y) {
+template<typename Type, typename Func>
+vector<Type> rungeKuttaTemplateStep(const RungeKuttaParams<Type>& rkParams, Type tau, int n, Func f, Type t, const vector<Type>& y) {
     int m = rkParams.stages;
-    vector<vector<T>> k(m);
+    vector<vector<Type>> k(m);
 
     auto& a = rkParams.a;
     auto& b = rkParams.b;
@@ -137,7 +148,7 @@ vector<T> rungeKuttaTemplateStep(const RungeKuttaParams<T>& rkParams, T tau, int
 
     k[0] = f(t, y);
 
-    vector<T> kSum = vector<T>(n, 0);
+    vector<Type> kSum = vector<Type>(n, 0);
     for (int i = 1; i < m; i++) {
         kSum.assign(n, 0);
         for (int j = 0; j < i; ++j) {

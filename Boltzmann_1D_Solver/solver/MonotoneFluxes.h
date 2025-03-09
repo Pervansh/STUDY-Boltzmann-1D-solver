@@ -4,38 +4,38 @@
 
 /*
 // Rusanov monotone flux struct
-template <typename T>
+template <typename Type>
 struct RusanovFlux {
-    static inline T flux(T fl, T fr, T ul, T ur) {
-        return T(0.5f) * (fl + fr - std::max(std::fabs(ur), std::fabs(ul)) * (ur - ul));
+    static inline Type flux(Type fl, Type fr, Type ul, Type ur) {
+        return Type(0.5f) * (fl + fr - std::max(std::fabs(ur), std::fabs(ul)) * (ur - ul));
     }
 };
 */
 
 /*
 // Rusanov monotone flux class (singleton)
-template <typename T>
+template <typename Type>
 class RusanovFlux {
 private:
-    static std::unique_ptr<RusanovFlux<T>> instance;
+    static std::unique_ptr<RusanovFlux<Type>> instance;
     
     //template <typename C>
-    // friend std::unique_ptr<RusanovFlux<T>> std::make_unique<RusanovFlux<T>>(); // Doesn't work
+    // friend std::unique_ptr<RusanovFlux<Type>> std::make_unique<RusanovFlux<Type>>(); // Doesn't work
     RusanovFlux() noexcept {}
 
 public:
-    static RusanovFlux<T>* const getInstance();
+    static RusanovFlux<Type>* const getInstance();
 
-    inline T operator() (T fl, T fr, T ul, T ur) const {
-        return T(0.5f) * (fl + fr - std::max(std::fabs(ur), std::fabs(ul)) * (ur - ul));
+    inline Type operator() (Type fl, Type fr, Type ul, Type ur) const {
+        return Type(0.5f) * (fl + fr - std::max(std::fabs(ur), std::fabs(ul)) * (ur - ul));
     }
 };
 
-template <typename T>
-RusanovFlux<T>* const RusanovFlux<T>::getInstance() {
+template <typename Type>
+RusanovFlux<Type>* const RusanovFlux<Type>::getInstance() {
     if (!instance) {
-        // instance = std::make_unique<RusanovFlux<T>>(); // Best way to do
-        instance = std::unique_ptr<RusanovFlux<T>>(new RusanovFlux());
+        // instance = std::make_unique<RusanovFlux<Type>>(); // Best way to do
+        instance = std::unique_ptr<RusanovFlux<Type>>(new RusanovFlux());
     }
 
     return instance.get();

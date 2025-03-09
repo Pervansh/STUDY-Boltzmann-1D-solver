@@ -31,10 +31,10 @@ T norm_inf(const std::vector<T>& x) {
 }
 
 /*
-template <class T>
-T norm_inf(const QuadMatrix<T>& A) {
+template <class Type>
+Type norm_inf(const QuadMatrix<Type>& A) {
     size_t n = A.order();
-    T  aSum, aMax = 0;
+    Type  aSum, aMax = 0;
 
     for (int i = 0; i < n; ++i) {
         aSum = 0;
@@ -61,10 +61,10 @@ T norm_1(const std::vector<T>& x) {
 }
 
 /*
-template<class T>
-T norm_1(const QuadMatrix<T>& A) {
+template<class Type>
+Type norm_1(const QuadMatrix<Type>& A) {
     size_t n = A.order();
-    T aSum, aMax = 0;
+    Type aSum, aMax = 0;
     for (int j = 0; j < n; ++j) {
         aSum = 0;
         for (int i = 0; i < n; ++i) {
@@ -79,20 +79,20 @@ T norm_1(const QuadMatrix<T>& A) {
 */
 
 //Шарова  норма дл  вектора и матрицы(норма Фробениуса)
-//template<class T>
-//T norm_2(vector<T> x) {
+//template<class Type>
+//Type norm_2(vector<Type> x) {
 //	size_t n = x.size();
-//	T xSum = 0;
+//	Type xSum = 0;
 //	for (int i = 0; i < n; ++i) {
 //		xSum += x[i] * x[i];
 //	}
 //	return sqrt(xSum);
 //}
 //Это не точно
-//template<class T>
-//T norm_F(QuadMatrix<T> A) {
+//template<class Type>
+//Type norm_F(QuadMatrix<Type> A) {
 //	size_t n = A.order();
-//	T aSum = 0;
+//	Type aSum = 0;
 //	for (int i = 0; i < n; ++i) {
 //		for (int j = 0; j < n; ++j) {
 //			aSum += A(i, j) * A(i, j);

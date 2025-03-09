@@ -18,6 +18,29 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\json\json-forwards.h" />
+    <ClInclude Include="include\json\json.h" />
+    <ClInclude Include="interface\HyperbolicFileInterface.h" />
+    <ClInclude Include="interface\MacroparametersFileInterface.h" />
+    <ClInclude Include="solver\AdvectionEq1DSolvers.h" />
+    <ClInclude Include="solver\BoltzmannEq1DSolvers.h" />
+    <ClInclude Include="solver\Fluxes.h" />
+    <ClInclude Include="solver\Mkt.h" />
+    <ClInclude Include="solver\MonotoneFluxes.h" />
+    <ClInclude Include="utils\AdditionalMath.h" />
+    <ClInclude Include="utils\Integration.h" />
+    <ClInclude Include="utils\Interpolation.h" />
+    <ClInclude Include="utils\Norma.h" />
+    <ClInclude Include="utils\rkMethods.h" />
+    <ClInclude Include="utils\rkMethodTests.h" />
+    <ClInclude Include="utils\VectorOperations.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="include\json\jsoncpp.cpp" />
+    <ClCompile Include="solver\main.cpp" />
+    <ClCompile Include="utils\Norma.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -70,6 +93,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PublicIncludeDirectories>$(PublicIncludeDirectories)</PublicIncludeDirectories>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -105,6 +131,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Users\Alex\Documents\Visual Studio Projects\BMSTU\Diploma\Boltzmann_1D_Solver\Boltzmann_1D_Solver\include;C:\Users\Alex\Documents\Visual Studio Projects\BMSTU\Diploma\Boltzmann_1D_Solver\Boltzmann_1D_Solver\solver;C:\Users\Alex\Documents\Visual Studio Projects\BMSTU\Diploma\Boltzmann_1D_Solver\Boltzmann_1D_Solver\interface;C:\Users\Alex\Documents\Visual Studio Projects\BMSTU\Diploma\Boltzmann_1D_Solver\Boltzmann_1D_Solver\utils;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,23 +154,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="AdditionalMath.h" />
-    <ClInclude Include="AdvectionEq1DSolvers.h" />
-    <ClInclude Include="BoltzmannEq1DSolvers.h" />
-    <ClInclude Include="Fluxes.h" />
-    <ClInclude Include="HyperbolicFileInterface.h" />
-    <ClInclude Include="Interpolation.h" />
-    <ClInclude Include="MonotoneFluxes.h" />
-    <ClInclude Include="Norma.h" />
-    <ClInclude Include="rkMethods.h" />
-    <ClInclude Include="rkMethodTests.h" />
-    <ClInclude Include="VectorOperations.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Norma.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
