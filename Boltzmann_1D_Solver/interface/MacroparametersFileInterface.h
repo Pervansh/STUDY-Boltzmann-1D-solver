@@ -31,7 +31,7 @@ public:
                 std::cerr << "folder \"" << folderName << "\" wasn't created!";
             }
         }
-        t_output.open(folderName + "\\t.txt");
+        t_output.open(folderName + "\\t_levels.txt");
         n_output.open(folderName + "\\n.txt");
         u_1_output.open(folderName + "\\u_1.txt");
         T_output.open(folderName + "\\T.txt");
@@ -41,6 +41,7 @@ public:
     template<std::floating_point T>
     void print(T t, const Macroparameters1d<T>& params) {
         t_output << t << ' ';
+        t_output.flush();
 
         printVector(params.n, n_output);
         n_output << std::endl;

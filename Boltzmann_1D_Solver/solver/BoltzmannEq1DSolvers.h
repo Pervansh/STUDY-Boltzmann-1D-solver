@@ -224,8 +224,10 @@ void bgk1dMethod(
         }
     );
 
-    auto fullRightSide( [&N_x, &N_xi, &dx, &xi_v, &J_h, &J_g, &apprInt, &data, &xisRightSide, inv_sqrt_Pi]
-    (const Destribution1dState<T>& state) {
+    auto fullRightSide(
+    [&N_x, &N_xi, &dx, &xi_v, &J_h, &J_g, &apprInt, &data, &xisRightSide, inv_sqrt_Pi] (
+        const Destribution1dState<T>& state
+    ) {
         // Should be passed through lambda argument (no dynamic init here)
         Destribution1dState<T> diff_state(N_x, N_xi);
 
