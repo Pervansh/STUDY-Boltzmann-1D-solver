@@ -120,19 +120,33 @@ void printVector(const std::vector<T>& v, Stream& stream, std::string sep = " ")
     if (v.size() == 0) return;
     
     stream << v[0];
-    for (int i = 0; i < v.size(); ++i) {
+    for (int i = 1; i < v.size(); ++i) {
         stream << sep << v[i];
     }
 }
 
+template<typename T, typename Stream>
+void printVector(const std::vector<std::vector<T>>& v, Stream& stream, std::string elem_sep = " ", std::string row_sep = "\n") {
+    if (v.size() == 0) return;
+
+    for (int i = 0; i < v.size(); ++i) {
+        if (i > 0) stream << row_sep;
+        stream << v[i][0];
+
+        for (int j = 1; j < v[i].size(); ++j) {
+            stream << elem_sep << v[i][j];
+        }
+    }
+}
+
 template<typename T>
-std::vector<T> rangeVector(int n, T a, T b) {
+std::vector<T> rangeVector(int n, T l, T r) {
     assert(n > 1);
 
     std::vector<T> res(n);
-    res[0] = a;
+    res[0] = l;
 
-    T diff = (a - b) / n;
+    T diff = (r - l) / n;
 
     for (int i = 1; i < n; ++i) {
         res[i] = res[i - 1] + diff;
@@ -142,13 +156,13 @@ std::vector<T> rangeVector(int n, T a, T b) {
 }
 
 template<typename T>
-std::vector<T> centerRangeVector(int n, T a, T b) {
+std::vector<T> centerRangeVector(int n, T l, T r) {
     assert(n > 0);
 
     std::vector<T> res(n);
 
-    T diff = (a - b) / n;
-    res[0] = a + diff / 2;
+    T diff = (r - l) / n;
+    res[0] = l + diff / 2;
 
     for (int i = 1; i < n; ++i) {
         res[i] = res[i - 1] + diff;
