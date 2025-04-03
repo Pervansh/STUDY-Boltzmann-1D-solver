@@ -25,5 +25,5 @@ template <std::floating_point T, typename U = T>
 requires requires(U u) { sign(u); }
 inline constexpr T signCond(T pos_val, T neg_val, U cond_val) {
     T cond_sgn(sign(cond_val));
-    return T(0.5f) * ((1 + cond_sgn) * pos_val + (1 + cond_sgn) * neg_val);
+    return T(0.5f) * ((1 + cond_sgn) * pos_val + (1 - cond_sgn) * neg_val);
 }
