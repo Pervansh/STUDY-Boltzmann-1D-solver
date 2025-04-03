@@ -15,6 +15,9 @@
 #include "Integration.h"
 #include "MacroparametersFileInterface.h"
 
+template<typename Func, typename T>
+concept OutputRuleType = std::floating_point<T> && requires (Func rule, T t) { { rule(t) } -> std::same_as<bool>; };
+
 template <std::floating_point T>
 struct Destribution1dState{
     std::vector<std::vector<T>> h; // h[i][j] = h_ij
@@ -83,7 +86,7 @@ struct Macroparameters1d {
 template <std::floating_point Type>
 Macroparameters1d<Type> bgk1dMacroparameters(
     const Destribution1dState<Type>& state,
-    const Type dx,
+    const Type dxi,
     const std::vector<Type>& xi_v,
     const ApproxIntFunc<Type>& apprInt
 ) {
@@ -114,9 +117,9 @@ Macroparameters1d<Type> bgk1dMacroparameters(
         }
 
         // Macroparameters calculations for n, u_1 & Type
-        n = apprInt(state.h[x_i], dx);
-        u_1 = apprInt(u_1_int_f, dx) / n;
-        Type T_int = apprInt(T_int_f, dx);
+        n = apprInt(state.h[x_i], dxi);
+        u_1 = apprInt(u_1_int_f, dxi) / n;
+        Type T_int = apprInt(T_int_f, dxi);
         T = 2. / 3. * (T_int / n - u_1 * u_1);
 
         // Integrant calculations for q_1
@@ -126,17 +129,27 @@ Macroparameters1d<Type> bgk1dMacroparameters(
         }
 
         // Macroparameters calculations for q_1 & c_k
-        q_1 = 0.5 * apprInt(q_1_int_f, dx);
+        q_1 = 0.5 * apprInt(q_1_int_f, dxi);
     }
 
     return params;
 }
 
 template <typename RkMethod, std::floating_point T>
+inline void bgk1dMethod(
+    const Bgk1dProblemData<T>& data,
+    const ApproxIntFunc<T>& apprInt,
+    Full1dStateOutput& output
+) {
+    bgk1dMethod<RkMethod>(data, apprInt, output, [](T) {return false; });
+}
+
+template <typename RkMethod, std::floating_point T, OutputRuleType<T> OutputRule>
 void bgk1dMethod(
     const Bgk1dProblemData<T>& data,
     const ApproxIntFunc<T>& apprInt,
-    Macroparameters1dOutput& output
+    Full1dStateOutput& output,
+    const OutputRule& outputRule
 ) {
     int N_x = data.N_x;
     int N_xi = data.N_xi;
@@ -177,6 +190,12 @@ void bgk1dMethod(
     // Consts
     const T inv_sqrt_Pi = T(1.) / std::sqrt(std::acos(T(-1.)));
 
+    // Boundry conditions arrays
+    std::vector<T> h_l = state.h[0];
+    std::vector<T> h_r = state.h[N_x - 1];
+    std::vector<T> g_l = state.g[0];
+    std::vector<T> g_r = state.g[N_x - 1];
+
     // Universal right side lambdas & calculation arrays
     std::vector<T> fL_j_v(N_x + 1);
     std::vector<T> fR_j_v(N_x + 1);
@@ -190,21 +209,23 @@ void bgk1dMethod(
             const std::vector<std::vector<T>>& f_v,
             const std::vector<std::vector<T>>& J_v,
             int xi_j, 
-            std::vector<std::vector<T>>& diffs
+            std::vector<std::vector<T>>& diffs,
+            T f_l,
+            T f_r
         ) {
-            // Domain boundry conditions and treatment (vacuum)
+            // Domain 1st order boundry conditions and treatment (equilibrium medium / vacuum)
 
-            T halfDelta0 = T(0.5f) * (f_v[1][xi_j] - f_v[0][xi_j]); // vacuum condition
+            T halfDelta0 = T(0.5f) * minmod(f_v[0][xi_j] - f_l, f_v[1][xi_j] - f_v[0][xi_j]); // 1st order condition
             fL_j_v[1] = f_v[0][xi_j] + halfDelta0; // Left value for right cell boundry
             fR_j_v[0] = f_v[0][xi_j] - halfDelta0; // Right value for left cell boundry
             // fR_j_v[N_x] = fR_j_v[0]; // periodic condition
-            fR_j_v[N_x] = T(0); // vacuum
+            fR_j_v[N_x] = f_r; // 1st order condition
 
-            T halfDeltaN_x = T(0.5f) * (f_v[N_x - 1][xi_j] - f_v[N_x - 2][xi_j]); // vacuum condition
+            T halfDeltaN_x = T(0.5f)* minmod(f_v[N_x - 1][xi_j] - f_v[N_x - 2][xi_j], f_r - f_v[N_x - 1][xi_j]); // 1st order condition
             fL_j_v[N_x] = f_v[N_x - 1][xi_j] + halfDeltaN_x; // Left value for right cell boundry
             fR_j_v[N_x - 1] = f_v[N_x - 1][xi_j] - halfDeltaN_x; // Right value for left cell boundry
             // fL_j_v[0] = fL_j_v[N_x]; // periodic condition
-            fL_j_v[0] = T(0); // vacuum
+            fL_j_v[0] = f_l; // 1st order condition
 
             // Calculations inner cell boundries (iterating over cells)
             for (int i = 1; i < N_x - 1; ++i) {
@@ -226,15 +247,15 @@ void bgk1dMethod(
     );
 
     auto fullRightSide(
-    [&N_x, &N_xi, &dx, &xi_v, &J_h, &J_g, &apprInt, &data, &xisRightSide, inv_sqrt_Pi] (
+    [&N_x, &N_xi, &dx, dxi, &xi_v, &h_l, &h_r, &g_l, &g_r, &J_h, &J_g, &apprInt, &data, &xisRightSide, inv_sqrt_Pi] (
         const Destribution1dState<T>& state
     ) {
         // Should be passed through lambda argument (no dynamic init here)
         Destribution1dState<T> diff_state(N_x, N_xi);
 
-        Macroparameters1d<T> params = bgk1dMacroparameters(state, dx, xi_v, apprInt);
+        Macroparameters1d<T> params = bgk1dMacroparameters(state, dxi, xi_v, apprInt);
 
-        //unpackaging (maybe needs to be rework by using references in macroparam func)
+        //unpackaging (maybe needs to be reworked by using references in macroparam func)
 
         std::vector<T>& n_v   = params.n;
         std::vector<T>& u_1_v = params.u_1;
@@ -242,23 +263,24 @@ void bgk1dMethod(
         std::vector<T>& q_1_v = params.q_1;
 
         for (int x_i = 0; x_i < N_x; ++x_i) {
-            T nu = n_v[x_i] * std::sqrt(T_v[x_i]) * data.delta;
+            T sqrt_T = std::sqrt(T_v[x_i]);
+            T nu = n_v[x_i] * sqrt_T * data.delta;
 
-            T n_mult_inv_sqrt_Pi_T = n_v[x_i] * inv_sqrt_Pi / std::sqrt(T_v[x_i]);
-            T n_mult_sqrt_T_cube_inv_Pi = n_v[x_i] * inv_sqrt_Pi * std::sqrt(T_v[x_i] * T_v[x_i] * T_v[x_i]);
+            T n_mult_inv_sqrt_Pi_T = n_v[x_i] * inv_sqrt_Pi / sqrt_T;
+            T n_mult_sqrt_T_inv_Pi = n_v[x_i] * inv_sqrt_Pi * sqrt_T;
 
             for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
                 T delta_xi_j = (xi_v[xi_j] - u_1_v[x_i]);
                 T M_exp = std::exp(-delta_xi_j * delta_xi_j / T_v[x_i]);
 
                 J_h[x_i][xi_j] = nu * (n_mult_inv_sqrt_Pi_T * M_exp - state.h[x_i][xi_j]);
-                J_g[x_i][xi_j] = nu * (n_mult_sqrt_T_cube_inv_Pi * M_exp - state.g[x_i][xi_j]);
+                J_g[x_i][xi_j] = nu * (n_mult_sqrt_T_inv_Pi * M_exp - state.g[x_i][xi_j]);
             }
         }
         
         for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
-            xisRightSide(state.h, J_h, xi_j, diff_state.h);
-            xisRightSide(state.g, J_g, xi_j, diff_state.g);
+            xisRightSide(state.h, J_h, xi_j, diff_state.h, h_l[xi_j], h_r[xi_j]);
+            xisRightSide(state.g, J_g, xi_j, diff_state.g, g_l[xi_j], g_r[xi_j]);
         }
 
         return diff_state;
@@ -266,12 +288,14 @@ void bgk1dMethod(
 
     T t{ 0.f };
     for (T t{ 0 }; data.t_end - t > 0; t += data.dt) {
-        // Time layers changing
+        Macroparameters1d<T> params = bgk1dMacroparameters(state, dxi, xi_v, apprInt);
+
+        if (outputRule(t)) {
+            output.print<T>(t, x_v, xi_v, bgk1dMacroparameters(state, dxi, xi_v, apprInt), state);
+        }
 
         state = RkMethod::stepY(fullRightSide, state, std::min(data.dt, data.t_end - t));
-
-        std::cout << state.h[0][0] << std::endl;
     }
 
-    output.print<T>(t, bgk1dMacroparameters(state, dx, xi_v, apprInt));
+    output.print<T>(t, x_v, xi_v, bgk1dMacroparameters(state, dxi, xi_v, apprInt), state);
 }
