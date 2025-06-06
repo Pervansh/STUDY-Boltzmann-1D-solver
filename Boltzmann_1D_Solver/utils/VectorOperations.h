@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <concepts>
 #include <assert.h>
 
 template<class T>
@@ -44,6 +45,62 @@ std::vector<T> mul(const std::vector<T>&a, U coef) {
     std::vector<T> res(n);
     for (int i = 0; i < n; ++i) {
         res[i] = a[i] * coef;
+    }
+    return res;
+}
+
+// parallel section
+
+// parallel realization
+template<std::floating_point T>
+std::vector<std::vector<T>> sum(const std::vector<std::vector<T>>& a, const std::vector<std::vector<T>>& b) {
+    int n = std::min(a.size(), b.size());
+    std::vector<std::vector<T>> res(n);
+
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        res[i] = sum(a[i], b[i]);
+    }
+
+    return res;
+}
+
+// parallel realization
+template<std::floating_point T>
+std::vector<std::vector<T>> diff(const std::vector<std::vector<T>>& a, const std::vector<std::vector<T>>& b) {
+    int n = std::min(a.size(), b.size());
+    std::vector<std::vector<T>> res(n);
+
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        res[i] = diff(a[i], b[i]);
+    }
+
+    return res;
+}
+
+// parallel realization
+template<std::floating_point T, class U = T>
+std::vector<std::vector<T>> div(const std::vector<std::vector<T>>& a, U coef) {
+    int n = a.size();
+    std::vector<std::vector<T>> res(n);
+
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        res[i] = div(a[i], coef);
+    }
+    return res;
+}
+
+// parallel realization
+template<std::floating_point T, class U = T>
+std::vector<std::vector<T>> mul(const std::vector<std::vector<T>>& a, U coef) {
+    int n = a.size();
+    std::vector<std::vector<T>> res(n);
+
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        res[i] = mul(a[i], coef);
     }
     return res;
 }

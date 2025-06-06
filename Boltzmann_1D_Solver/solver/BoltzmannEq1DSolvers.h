@@ -8,12 +8,15 @@
 
 #include <assert.h>
 
+#include <omp.h>
+
 #include "AdditionalMath.h"
 #include "Norma.h"
 #include "rkMethods.h"
 #include "VectorOperations.h"
 #include "Integration.h"
 #include "MacroparametersFileInterface.h"
+#include "Mkt.h"
 
 template<typename Func, typename T>
 concept OutputRuleType = std::floating_point<T> && requires (Func rule, T t) { { rule(t) } -> std::same_as<bool>; };
@@ -100,6 +103,7 @@ Macroparameters1d<Type> bgk1dMacroparameters(
 
     Macroparameters1d<Type> params(N_x);
 
+#pragma omp parallel for
     for (int x_i = 0; x_i < N_x; ++x_i) {
         assert(state.h[x_i].size() == state.g[x_i].size());
 
@@ -278,6 +282,7 @@ void bgk1dMethod(
             T n_mult_inv_sqrt_Pi_T = n_v[x_i] * inv_sqrt_Pi / sqrt_T;
             T n_mult_sqrt_T_inv_Pi = n_v[x_i] * inv_sqrt_Pi * sqrt_T;
 
+#pragma omp parallel for
             for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
                 T delta_xi_j = (xi_v[xi_j] - u_1_v[x_i]);
                 T M_exp = std::exp(-delta_xi_j * delta_xi_j / T_v[x_i]);
@@ -287,13 +292,15 @@ void bgk1dMethod(
             }
         }
         
+#pragma omp parallel for // Maybe this parallel for should be joined with previous one
         for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
             xisRightSide(state.h, J_h, xi_j, diff_state.h, h_l[xi_j], h_r[xi_j]);
             xisRightSide(state.g, J_g, xi_j, diff_state.g, g_l[xi_j], g_r[xi_j]);
         }
 
         return diff_state;
-    });
+        }
+    );
 
     T t{ 0.f };
     for (T t{ 0 }; data.t_end - t > 0; t += data.dt) {
