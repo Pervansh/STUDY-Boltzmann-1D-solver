@@ -3,6 +3,8 @@
 #include <cmath>
 #include <concepts>
 
+constexpr double D_PI = 3.14159265358979323846;
+
 template <typename T>
 inline constexpr int sign(T val) {
     return (T(0) < val) - (val < T(0));
