@@ -18,6 +18,11 @@
 template<typename Func, typename T>
 concept OutputRuleType = std::floating_point<T> && requires (Func rule, T t) { { rule(t) } -> std::same_as<bool>; };
 
+template<std::floating_point T>
+T knToDelta(T Kn) {
+    return 8. / (5. * D_PI * Kn);
+}
+
 template <std::floating_point T>
 struct Destribution1dState{
     std::vector<std::vector<T>> h; // h[i][j] = h_ij
@@ -139,9 +144,10 @@ template <typename RkMethod, std::floating_point T>
 inline void bgk1dMethod(
     const Bgk1dProblemData<T>& data,
     const ApproxIntFunc<T>& apprInt,
-    Full1dStateOutput& output
+    Full1dStateOutput& output,
+    const ViscosityFunc<T>& mu = ballMoleculeViscosityRule<T>
 ) {
-    bgk1dMethod<RkMethod>(data, apprInt, output, [](T) {return false; });
+    bgk1dMethod<RkMethod>(data, apprInt, output, [](T) {return false; }, mu);
 }
 
 template <typename RkMethod, std::floating_point T, OutputRuleType<T> OutputRule>
@@ -149,7 +155,8 @@ void bgk1dMethod(
     const Bgk1dProblemData<T>& data,
     const ApproxIntFunc<T>& apprInt,
     Full1dStateOutput& output,
-    const OutputRule& outputRule
+    const OutputRule& outputRule,
+    const ViscosityFunc<T>& mu = ballMoleculeViscosityRule<T>
 ) {
     int N_x = data.N_x;
     int N_xi = data.N_xi;
@@ -245,7 +252,10 @@ void bgk1dMethod(
     );
 
     auto fullRightSide(
-    [&N_x, &N_xi, &dx, dxi, &xi_v, &h_l, &h_r, &g_l, &g_r, &J_h, &J_g, &apprInt, &data, &xisRightSide, inv_sqrt_Pi] (
+        [
+            &N_x, &N_xi, &dx, dxi, &xi_v, &h_l, &h_r, &g_l, &g_r, &J_h, &J_g, 
+            &apprInt, &mu, &data, &xisRightSide, inv_sqrt_Pi
+        ] (
         const Destribution1dState<T>& state
     ) {
         // Should be passed through lambda argument (no dynamic init here)
@@ -262,7 +272,8 @@ void bgk1dMethod(
 
         for (int x_i = 0; x_i < N_x; ++x_i) {
             T sqrt_T = std::sqrt(T_v[x_i]);
-            T nu = n_v[x_i] * sqrt_T * data.delta;
+                // T nu = n_v[x_i] * sqrt_T * data.delta;  // for ball molecule model only!
+                T nu = n_v[x_i] * T_v[x_i] * data.delta / mu(T_v[x_i]);
 
             T n_mult_inv_sqrt_Pi_T = n_v[x_i] * inv_sqrt_Pi / sqrt_T;
             T n_mult_sqrt_T_inv_Pi = n_v[x_i] * inv_sqrt_Pi * sqrt_T;
