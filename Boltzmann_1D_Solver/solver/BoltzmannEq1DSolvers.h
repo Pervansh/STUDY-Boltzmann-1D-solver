@@ -162,10 +162,8 @@ void bgk1dMethod(
         assert(data.f_1[x_i].size() == N_xi);
         g[x_i].resize(N_xi);
 
-        T T_sqr = data.Ts[x_i] * data.Ts[x_i];
-
         for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
-            g[x_i][xi_j] = T_sqr * data.f_1[x_i][xi_j];
+            g[x_i][xi_j] = data.Ts[x_i] * data.f_1[x_i][xi_j];
         }
     }
 
@@ -210,8 +208,8 @@ void bgk1dMethod(
             const std::vector<std::vector<T>>& J_v,
             int xi_j, 
             std::vector<std::vector<T>>& diffs,
-            T f_l,
-            T f_r
+            const T f_l,
+            const T f_r
         ) {
             // Domain 1st order boundry conditions and treatment (equilibrium medium / vacuum)
 
@@ -288,7 +286,7 @@ void bgk1dMethod(
 
     T t{ 0.f };
     for (T t{ 0 }; data.t_end - t > 0; t += data.dt) {
-        Macroparameters1d<T> params = bgk1dMacroparameters(state, dxi, xi_v, apprInt);
+        // Macroparameters1d<T> params = bgk1dMacroparameters(state, dxi, xi_v, apprInt);
 
         if (outputRule(t)) {
             output.print<T>(t, x_v, xi_v, bgk1dMacroparameters(state, dxi, xi_v, apprInt), state);
