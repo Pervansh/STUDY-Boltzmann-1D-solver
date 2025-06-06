@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 #include <memory>
 #include <vector>
@@ -6,83 +6,17 @@
 #include <concepts>
 #include <cmath>
 
+#include <omp.h>
+
 #include "BoltzmannEq1DSolvers.h"
 #include "Mkt.h"
 #include "MacroparametersFileInterface.h"
 #include "rkMethods.h"
+#include "BoltzmannEq1DProblems.h"
 
-template<std::floating_point T>
-Bgk1dProblemData<T> temperatureRiemannProblem(T T_1, T T_2, int N_x, T x_max, int N_xi, T xi_max, T dt, T t_end, T delta) {
-    assert(N_x % 2 == 0);
-
-    Bgk1dProblemData<T> data;
-    data.N_x = N_x;
-    data.N_xi = N_xi;
-    data.dt = dt;
-    data.t_end = t_end;
-    data.xi_max = xi_max;
-    data.delta = delta;
-
-    data.a = -x_max;
-    data.b = x_max;
-    
-    data.Ts = std::vector<T>(N_x);
-
-    for (int x_i = 0; x_i < N_x / 2; ++x_i) {
-        data.Ts[x_i] = T_1;
-    }
-
-    for (int x_i = N_x / 2; x_i < N_x; ++x_i) {
-        data.Ts[x_i] = T_2;
-    }
-
-    data.f_1 = MaxwellDistribution1d<T>(data.Ts, data.a, data.b, N_xi, data.xi_max);
-
-    return data;
-}
-
-template<std::floating_point T>
-Bgk1dProblemData<T> densityRiemannProblem(
-    T Temp, T n_1, T n_2, 
-    int N_x, T x_max, int N_xi, T xi_max, 
-    T dt, T t_end, 
-    T delta, 
-    T discont_point = T(0)
-) {
-    assert(N_x % 2 == 0);
-
-    Bgk1dProblemData<T> data;
-    data.N_x = N_x;
-    data.N_xi = N_xi;
-    data.dt = dt;
-    data.t_end = t_end;
-    data.xi_max = xi_max;
-    data.delta = delta;
-
-    data.a = -x_max;
-    data.b = x_max;
-
-    T dx = 2 * x_max / N_x;
-
-    int discont_x_ind = (int)std::round((discont_point - data.a) / dx);
-
-    data.Ts = std::vector<T>(N_x);
-
-    for (int x_i = 0; x_i < N_x; ++x_i) {
-        data.Ts[x_i] = Temp;
-    }
-
-    data.f_1 = MaxwellDistribution1d<T>(data.Ts, data.a, data.b, N_xi, data.xi_max);
-
-    for (int x_i = 0; x_i < discont_x_ind; ++x_i) {
-        data.f_1[x_i] *= n_1;
-    }
-
-    for (int x_i = discont_x_ind; x_i < N_x; ++x_i) {
-        data.f_1[x_i] *= n_2;
-    }
-
-    return data;
+void ompSetup() {
+    omp_set_num_threads(20);
+    std::cout << "num_threads: " << omp_get_max_threads() << std::endl;
 }
 
 void studentSpringDensityTest() {
@@ -114,8 +48,121 @@ void freeMoleculeDensityTest() {
     //*/
 }
 
+void emittingWallTest() {
+    double t_end = 10;
+    double dt = 0.001;
+
+    const auto testRule = [dt](double t) { return (int)std::round(t / dt) % 100 == 0; };
+
+    Bgk1dProblemData<double> data = emittingWallProblem<double>(
+        1., 1.,
+        1.5, 2.,
+        400, 12.5,
+        50, 6.,
+        dt, t_end,
+        100
+    );
+
+    Full1dStateOutput outputBall("output\\bgk1d\\testEmittingWallBall");
+    bgk1dMethod<ExplicitEulerRK>(data, Cell1stOrderInt, outputBall, testRule, ballMoleculeViscosityRule);
+
+    Full1dStateOutput outputMaxwell("output\\bgk1d\\testEmittingWallMaxwell");
+    bgk1dMethod<ExplicitEulerRK>(data, Cell1stOrderInt, outputMaxwell, testRule, maxwellMoleculeViscosityRule);
+}
+
+void evaporatingWallTest() {
+    double t_end = 5.;
+    double dt = 0.0001;
+    //double t_end = 100000 * dt;
+
+    int t_step_cnt = (int)std::round((t_end + 2 * dt) / dt);
+    int control_t_step = t_step_cnt / 5;
+
+    const auto testRule = [dt, control_t_step](double t) { return (int)std::round(t / dt) % control_t_step == 0; };
+
+    Bgk1dProblemData<double> data = evaporatingWallProblem<double>(
+        1., 1.,
+        2., 10.,
+        150, 15.,
+        100, 15.,
+        dt, t_end,
+        knToDelta(0.01)
+    );
+
+    /*Full1dStateOutput outputBall("output\\bgk1d\\testEvaporatingWallBall");
+    bgk1dMethod<ExplicitEulerRK>(data, Cell1stOrderInt, outputBall, testRule, ballMoleculeViscosityRule);*/
+
+    //Full1dStateOutput outputMaxwell("output\\bgk1d\\testEvaporatingWallMaxwell");
+    // bgk1dMethod<ExplicitEulerRK>(data, simpsonInt, outputMaxwell, testRule, maxwellMoleculeViscosityRule);
+
+    Bgk1dProblemData<double> data2 = evaporatingWallProblem<double>(
+        1., 1.,
+        2., 10.,
+        500, 15.,
+        100, 9.,
+        dt, t_end,
+        knToDelta(0.01)
+    );
+
+    //Full1dStateOutput outputMaxwell2("output\\bgk1d\\testEvaporatingWallMaxwell2");
+    //bgk1dMethod<ExplicitEulerRK>(data2, simpsonInt, outputMaxwell2, testRule, maxwellMoleculeViscosityRule);
+
+    //Full1dStateOutput outputMaxwell3("output\\bgk1d\\testEvaporatingWallMaxwell3");
+    //bgk1dMethod<ExplicitEulerRK>(data2, Cell1stOrderInt, outputMaxwell3, testRule, maxwellMoleculeViscosityRule);
+
+    Bgk1dProblemData<double> data4 = evaporatingWallProblem<double>(
+        1., 1.,
+        2., 10.,
+        300, 15.,
+        100, 9.,
+        dt, t_end,
+        knToDelta(0.01)
+    );
+
+    Full1dStateOutput outputMaxwell4("output\\bgk1d\\testEvaporatingWallMaxwell4");
+    bgk1dMethod<ExplicitEulerRK>(data4, simpsonInt, outputMaxwell4, testRule, maxwellMoleculeViscosityRule);
+}
+
+void density10Test() {
+    double t_end = 0.2 * std::sqrt(2.);
+    double dt = 0.00002;
+
+    int t_step_cnt = (int)std::round(t_end / dt);
+    int control_t_step = t_step_cnt / 100;
+
+    Bgk1dProblemData<double> data = densityRiemannProblem<double>(1., 1., 0.125, 150 * 5, 0., 1., 45 * 8, 8.0, dt, t_end, 10000.);
+
+    Full1dStateOutput output("output\\bgk1d\\testDensity10Multiple");
+    const auto testRule = [dt, control_t_step](double t) { return (int)std::round(t / dt) % control_t_step == 0; };
+    // bgk1dMethod<ExplicitEulerRK>(data, Cell1stOrderInt, output, testRule);
+    bgk1dMethod<ExplicitEulerRK>(data, simpsonInt, output, testRule);   
+}
+
+void sodTest() {
+    double t_end = 0.2 * std::sqrt(2.);
+    double dt = 0.00002;
+
+    int t_step_cnt = (int)std::round(t_end / dt);
+    int control_t_step = t_step_cnt / 100;
+
+    // Bgk1dProblemData<double> data = densityTemperatureRiemannProblem<double>(1., 1., 0.8, 0.125, 150 * 5, 0., 1., 45 * 8, 8.0, dt, t_end, 10000.);
+    Bgk1dProblemData<double> data = densityTemperatureRiemannProblem<double>(1., 1., 0.8, 0.125, 150 * 3, 0., 1., 45 * 4, 8.0, dt, t_end, 10000.);
+
+    Full1dStateOutput output("output\\bgk1d\\SOD_1");
+    const auto testRule = [dt, control_t_step](double t) { return (int)std::round(t / dt) % control_t_step == 0; };
+    bgk1dMethod<ExplicitEulerRK>(data, simpsonInt, output, testRule);
+}
+
 int main() {
-    freeMoleculeDensityTest();
+    ompSetup();
+
+    //emittingWallTest();
+
+    //density10Test();
+
+    //evaporatingWallTest();
+
+    sodTest();
 
     /*
     Bgk1dProblemData<double> data = temperatureRiemannProblem<double>(1., 0.1, 6, 1., 5, 1.0, 0.01, 1., 1.);

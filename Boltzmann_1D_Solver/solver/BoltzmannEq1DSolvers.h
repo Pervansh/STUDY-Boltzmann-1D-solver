@@ -260,45 +260,45 @@ void bgk1dMethod(
             &N_x, &N_xi, &dx, dxi, &xi_v, &h_l, &h_r, &g_l, &g_r, &J_h, &J_g, 
             &apprInt, &mu, &data, &xisRightSide, inv_sqrt_Pi
         ] (
-        const Destribution1dState<T>& state
-    ) {
-        // Should be passed through lambda argument (no dynamic init here)
-        Destribution1dState<T> diff_state(N_x, N_xi);
+            const Destribution1dState<T>& state
+        ) {
+            // Should be passed through lambda argument (no dynamic init here)
+            Destribution1dState<T> diff_state(N_x, N_xi);
 
-        Macroparameters1d<T> params = bgk1dMacroparameters(state, dxi, xi_v, apprInt);
+            Macroparameters1d<T> params = bgk1dMacroparameters(state, dxi, xi_v, apprInt);
 
-        //unpackaging (maybe needs to be reworked by using references in macroparam func)
+            //unpackaging (maybe needs to be reworked by using references in macroparam func)
 
-        std::vector<T>& n_v   = params.n;
-        std::vector<T>& u_1_v = params.u_1;
-        std::vector<T>& T_v   = params.T;
-        std::vector<T>& q_1_v = params.q_1;
+            std::vector<T>& n_v   = params.n;
+            std::vector<T>& u_1_v = params.u_1;
+            std::vector<T>& T_v   = params.T;
+            std::vector<T>& q_1_v = params.q_1;
 
-        for (int x_i = 0; x_i < N_x; ++x_i) {
-            T sqrt_T = std::sqrt(T_v[x_i]);
+            for (int x_i = 0; x_i < N_x; ++x_i) {
+                T sqrt_T = std::sqrt(T_v[x_i]);
                 // T nu = n_v[x_i] * sqrt_T * data.delta;  // for ball molecule model only!
                 T nu = n_v[x_i] * T_v[x_i] * data.delta / mu(T_v[x_i]);
 
-            T n_mult_inv_sqrt_Pi_T = n_v[x_i] * inv_sqrt_Pi / sqrt_T;
-            T n_mult_sqrt_T_inv_Pi = n_v[x_i] * inv_sqrt_Pi * sqrt_T;
+                T n_mult_inv_sqrt_Pi_T = n_v[x_i] * inv_sqrt_Pi / sqrt_T;
+                T n_mult_sqrt_T_inv_Pi = n_v[x_i] * inv_sqrt_Pi * sqrt_T;
 
 #pragma omp parallel for
-            for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
-                T delta_xi_j = (xi_v[xi_j] - u_1_v[x_i]);
-                T M_exp = std::exp(-delta_xi_j * delta_xi_j / T_v[x_i]);
+                for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
+                    T delta_xi_j = (xi_v[xi_j] - u_1_v[x_i]);
+                    T M_exp = std::exp(-delta_xi_j * delta_xi_j / T_v[x_i]);
 
-                J_h[x_i][xi_j] = nu * (n_mult_inv_sqrt_Pi_T * M_exp - state.h[x_i][xi_j]);
-                J_g[x_i][xi_j] = nu * (n_mult_sqrt_T_inv_Pi * M_exp - state.g[x_i][xi_j]);
+                    J_h[x_i][xi_j] = nu * (n_mult_inv_sqrt_Pi_T * M_exp - state.h[x_i][xi_j]);
+                    J_g[x_i][xi_j] = nu * (n_mult_sqrt_T_inv_Pi * M_exp - state.g[x_i][xi_j]);
+                }
             }
-        }
-        
-#pragma omp parallel for // Maybe this parallel for should be joined with previous one
-        for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
-            xisRightSide(state.h, J_h, xi_j, diff_state.h, h_l[xi_j], h_r[xi_j]);
-            xisRightSide(state.g, J_g, xi_j, diff_state.g, g_l[xi_j], g_r[xi_j]);
-        }
 
-        return diff_state;
+#pragma omp parallel for // Maybe this parallel for should be joined with previous one
+            for (int xi_j = 0; xi_j < N_xi; ++xi_j) {
+                xisRightSide(state.h, J_h, xi_j, diff_state.h, h_l[xi_j], h_r[xi_j]);
+                xisRightSide(state.g, J_g, xi_j, diff_state.g, g_l[xi_j], g_r[xi_j]);
+            }
+
+            return diff_state;
         }
     );
 
